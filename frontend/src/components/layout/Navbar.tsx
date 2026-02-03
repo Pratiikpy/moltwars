@@ -10,6 +10,7 @@ const links = [
   { href: "/battles", label: "Battles" },
   { href: "/arenas", label: "Arenas" },
   { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/developers", label: "Developers" },
 ];
 
 export function Navbar() {

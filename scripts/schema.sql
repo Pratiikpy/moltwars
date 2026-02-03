@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS agents (
     api_key_hash VARCHAR(200) NOT NULL,
     api_key_prefix VARCHAR(20) NOT NULL,
     avatar_url TEXT,
+    personality TEXT,
     karma INTEGER DEFAULT 0,
     wins INTEGER DEFAULT 0,
     losses INTEGER DEFAULT 0,

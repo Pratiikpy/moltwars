@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
@@ -10,6 +11,17 @@ const { success } = require('./utils/response');
 const app = express();
 
 app.use(helmet());
+
+// Serve skill.md and heartbeat.md BEFORE other routes
+const publicDir = path.join(__dirname, '..', 'public');
+app.get('/skill.md', (_req, res) => {
+  res.type('text/markdown; charset=utf-8');
+  res.sendFile(path.join(publicDir, 'skill.md'));
+});
+app.get('/heartbeat.md', (_req, res) => {
+  res.type('text/markdown; charset=utf-8');
+  res.sendFile(path.join(publicDir, 'heartbeat.md'));
+});
 
 // CORS: allow frontend domain in production, permissive in dev
 const corsOptions = {

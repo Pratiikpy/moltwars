@@ -156,7 +156,8 @@ async function getById(battleId) {
     `SELECT b.*,
             c.name as challenger_name,
             d.name as defender_name,
-            w.name as winner_name
+            w.name as winner_name,
+            COALESCE(b.comment_count, 0) as comment_count
      FROM battles b
      LEFT JOIN agents c ON b.challenger_id = c.id
      LEFT JOIN agents d ON b.defender_id = d.id
@@ -171,18 +172,56 @@ async function getById(battleId) {
     [battleId]
   );
 
-  return { battle: result.rows[0], rounds: rounds.rows };
+  // Get vote counts summary
+  const votesResult = await query(
+    `SELECT voted_for_id, COUNT(*) as count, SUM(weight) as weighted_count
+     FROM battle_votes
+     WHERE battle_id = $1
+     GROUP BY voted_for_id`,
+    [battleId]
+  );
+
+  const battle = result.rows[0];
+  const votes = {
+    challenger: 0,
+    defender: 0,
+    challenger_weighted: 0,
+    defender_weighted: 0,
+    total: 0,
+  };
+
+  for (const row of votesResult.rows) {
+    const count = parseInt(row.count, 10);
+    const weighted = parseInt(row.weighted_count, 10);
+    votes.total += count;
+
+    if (row.voted_for_id === battle.challenger_id) {
+      votes.challenger = count;
+      votes.challenger_weighted = weighted;
+    } else if (row.voted_for_id === battle.defender_id) {
+      votes.defender = count;
+      votes.defender_weighted = weighted;
+    }
+  }
+
+  return { battle, rounds: rounds.rows, votes };
 }
 
-async function list({ status, arena, limit, offset }) {
+async function list({ status, arena, sort = 'recent', limit, offset }) {
   const params = [];
   const conditions = [];
   let idx = 1;
 
-  if (status) {
+  // Handle special sort modes that filter by status
+  if (sort === 'live') {
+    conditions.push(`b.status = 'active'`);
+  } else if (sort === 'voting') {
+    conditions.push(`b.status = 'voting'`);
+  } else if (status) {
     conditions.push(`b.status = $${idx++}`);
     params.push(status);
   }
+
   if (arena) {
     conditions.push(`b.arena_id = (SELECT id FROM arenas WHERE name = $${idx++})`);
     params.push(arena);
@@ -196,6 +235,27 @@ async function list({ status, arena, limit, offset }) {
   );
   const total = parseInt(countResult.rows[0].count, 10);
 
+  // Determine ORDER BY based on sort parameter
+  let orderBy;
+  switch (sort) {
+    case 'top':
+      orderBy = 'ORDER BY b.total_pool DESC, b.spectator_count DESC';
+      break;
+    case 'discussed':
+      orderBy = 'ORDER BY COALESCE(b.comment_count, 0) DESC, b.created_at DESC';
+      break;
+    case 'live':
+      orderBy = 'ORDER BY b.started_at DESC';
+      break;
+    case 'voting':
+      orderBy = 'ORDER BY b.voting_ends_at ASC';
+      break;
+    case 'recent':
+    default:
+      orderBy = 'ORDER BY b.created_at DESC';
+      break;
+  }
+
   params.push(limit, offset);
   const result = await query(
     `SELECT b.*,
@@ -205,7 +265,7 @@ async function list({ status, arena, limit, offset }) {
      LEFT JOIN agents c ON b.challenger_id = c.id
      LEFT JOIN agents d ON b.defender_id = d.id
      ${where}
-     ORDER BY b.created_at DESC
+     ${orderBy}
      LIMIT $${idx++} OFFSET $${idx}`,
     params
   );

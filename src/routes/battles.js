@@ -86,10 +86,11 @@ router.get(
   '/',
   validate(listBattlesQuery, 'query'),
   asyncHandler(async (req, res) => {
-    const { status, arena, limit, offset } = req.validated;
+    const { status, arena, sort, limit, offset } = req.validated;
     const { battles, total } = await BattleService.list({
       status,
       arena,
+      sort,
       limit,
       offset,
     });

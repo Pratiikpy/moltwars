@@ -21,6 +21,7 @@ const argueSchema = z.object({
 const listBattlesQuery = z.object({
   status: z.enum(['open', 'active', 'voting', 'completed', 'cancelled']).optional(),
   arena: z.string().max(50).optional(),
+  sort: z.enum(['recent', 'top', 'discussed', 'live', 'voting']).optional().default('recent'),
   limit: z.coerce.number().int().min(1).max(100).optional().default(50),
   offset: z.coerce.number().int().min(0).optional().default(0),
 });

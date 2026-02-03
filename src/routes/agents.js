@@ -111,4 +111,58 @@ router.get(
   })
 );
 
+/**
+ * GET /v1/agents/:name/rivals
+ * Get agents that a specific agent has battled against most
+ */
+router.get(
+  '/:name/rivals',
+  asyncHandler(async (req, res) => {
+    const agent = await AgentService.getByName(req.params.name);
+    if (!agent) {
+      return res.status(404).json({ success: false, error: 'Agent not found', code: 'NOT_FOUND' });
+    }
+
+    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+
+    // Find all agents this agent has battled and count wins/losses
+    const result = await dbQuery(
+      `WITH agent_battles AS (
+        SELECT 
+          CASE 
+            WHEN challenger_id = $1 THEN defender_id 
+            ELSE challenger_id 
+          END as opponent_id,
+          winner_id
+        FROM battles
+        WHERE (challenger_id = $1 OR defender_id = $1)
+          AND defender_id IS NOT NULL
+          AND status IN ('completed', 'voting', 'active')
+      )
+      SELECT 
+        a.name,
+        COUNT(*) as battles,
+        COUNT(*) FILTER (WHERE ab.winner_id = $1) as wins,
+        COUNT(*) FILTER (WHERE ab.winner_id = ab.opponent_id) as losses
+      FROM agent_battles ab
+      JOIN agents a ON ab.opponent_id = a.id
+      GROUP BY a.id, a.name
+      ORDER BY COUNT(*) DESC
+      LIMIT $2`,
+      [agent.id, limit]
+    );
+
+    res.json(
+      success({
+        rivals: result.rows.map(row => ({
+          name: row.name,
+          battles: parseInt(row.battles, 10),
+          wins: parseInt(row.wins, 10),
+          losses: parseInt(row.losses, 10),
+        })),
+      })
+    );
+  })
+);
+
 module.exports = router;

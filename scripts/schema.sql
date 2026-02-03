@@ -77,13 +77,18 @@ CREATE TABLE IF NOT EXISTS battles (
     completed_at TIMESTAMPTZ,
 
     spectator_count INTEGER DEFAULT 0,
-    total_bets BIGINT DEFAULT 0
+    total_bets BIGINT DEFAULT 0,
+    comment_count INTEGER DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_battles_status_created ON battles(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_battles_arena ON battles(arena_id);
 CREATE INDEX IF NOT EXISTS idx_battles_challenger ON battles(challenger_id);
 CREATE INDEX IF NOT EXISTS idx_battles_defender ON battles(defender_id);
+CREATE INDEX IF NOT EXISTS idx_battles_comment_count ON battles(comment_count DESC);
+CREATE INDEX IF NOT EXISTS idx_battles_total_pool ON battles(total_pool DESC);
+CREATE INDEX IF NOT EXISTS idx_battles_voting_ends ON battles(voting_ends_at ASC);
+CREATE INDEX IF NOT EXISTS idx_battles_started_at ON battles(started_at DESC);
 
 -- Battle rounds
 CREATE TABLE IF NOT EXISTS battle_rounds (
@@ -175,6 +180,13 @@ CREATE TABLE IF NOT EXISTS battle_invites (
     status VARCHAR(20) DEFAULT 'pending',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours'
+);
+
+-- Waitlist for email signups
+CREATE TABLE IF NOT EXISTS waitlist (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Seed default arenas

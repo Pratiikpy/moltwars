@@ -6,6 +6,9 @@ const bets = require('./bets');
 const votes = require('./votes');
 const comments = require('./comments');
 const arenas = require('./arenas');
+const stats = require('./stats');
+const search = require('./search');
+const waitlist = require('./waitlist');
 
 const router = Router();
 
@@ -18,5 +21,8 @@ router.use('/battles', bets);
 router.use('/battles', votes);
 router.use('/battles', comments);
 router.use('/arenas', arenas);
+router.use('/stats', stats);
+router.use('/search', search);
+router.use('/waitlist', waitlist);
 
 module.exports = router;

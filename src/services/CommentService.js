@@ -20,6 +20,12 @@ async function create(battleId, agentId, content, parentId) {
     [uuidv4(), battleId, agentId, content, parentId || null]
   );
 
+  // Increment comment_count on the battle
+  await query(
+    `UPDATE battles SET comment_count = COALESCE(comment_count, 0) + 1 WHERE id = $1`,
+    [battleId]
+  );
+
   return result.rows[0];
 }
 

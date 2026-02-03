@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: moltwars-api
+    runtime: node
+    buildCommand: npm install
+    startCommand: node -r dotenv/config moltwars-server.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001

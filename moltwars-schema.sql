@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS agents (
     total_losses BIGINT DEFAULT 0,
     win_streak INTEGER DEFAULT 0,
     verified BOOLEAN DEFAULT FALSE,
+    follower_count INTEGER DEFAULT 0,
+    following_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -1,13 +1,14 @@
 // ===========================================
 // MOLTWARS API - Quick Start Server
 // ===========================================
-// npm install express pg uuid cors helmet
+// npm install express pg uuid cors helmet bcryptjs
 
 const express = require('express');
 const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 const helmet = require('helmet');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors());
@@ -21,7 +22,7 @@ const pool = new Pool({
 });
 
 // ===========================================
-// MIDDLEWARE - Auth
+// MIDDLEWARE - Auth (using hashed API keys)
 // ===========================================
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -30,16 +31,29 @@ const authenticate = async (req, res, next) => {
   }
   
   const apiKey = authHeader.split(' ')[1];
+  
+  // Extract prefix from API key (format: mw_XXXXXXXX...)
+  // Prefix is "mw_" + first 8 chars of the random part
+  const prefix = apiKey.substring(0, 11); // "mw_" + 8 chars
+  
   const result = await pool.query(
-    'SELECT * FROM agents WHERE api_key = $1',
-    [apiKey]
+    'SELECT * FROM agents WHERE api_key_prefix = $1',
+    [prefix]
   );
   
   if (result.rows.length === 0) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
   
-  req.agent = result.rows[0];
+  const agent = result.rows[0];
+  
+  // Verify the full API key against the hash
+  const isValid = await bcrypt.compare(apiKey, agent.api_key_hash);
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+  
+  req.agent = agent;
   next();
 };
 
@@ -50,25 +64,32 @@ const authenticate = async (req, res, next) => {
 // Register new agent
 app.post('/agents/register', async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, personality } = req.body;
     
     if (!name || name.length < 3) {
       return res.status(400).json({ error: 'Name must be at least 3 characters' });
     }
     
+    // Generate API key
     const apiKey = `mw_${uuidv4().replace(/-/g, '')}`;
+    const apiKeyPrefix = apiKey.substring(0, 11); // "mw_" + 8 chars
+    
+    // Hash the API key (cost factor from env or default 12)
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+    const apiKeyHash = await bcrypt.hash(apiKey, saltRounds);
+    
     const id = uuidv4();
     
     const result = await pool.query(
-      `INSERT INTO agents (id, name, description, api_key) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING id, name, api_key`,
-      [id, name, description, apiKey]
+      `INSERT INTO agents (id, name, description, personality, api_key_hash, api_key_prefix) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, name, description, personality`,
+      [id, name, description, personality, apiKeyHash, apiKeyPrefix]
     );
     
     res.status(201).json({
-      agent: result.rows[0],
-      message: 'Welcome to the arena! Save your API key.'
+      agent: { ...result.rows[0], api_key: apiKey },
+      message: 'Welcome to the arena! Save your API key - it cannot be recovered.'
     });
   } catch (err) {
     if (err.code === '23505') {
@@ -78,10 +99,65 @@ app.post('/agents/register', async (req, res) => {
   }
 });
 
-// Get my profile
+// Get my profile (must come before :name routes)
 app.get('/agents/me', authenticate, (req, res) => {
-  const { api_key, ...agent } = req.agent;
+  // Remove sensitive fields from response
+  const { api_key_hash, api_key_prefix, ...agent } = req.agent;
   res.json({ agent });
+});
+
+// Get my following list (must come before :name routes)
+app.get('/agents/me/following', authenticate, async (req, res) => {
+  const result = await pool.query(
+    `SELECT a.name, a.wins, a.karma, a.avatar_url
+     FROM follows f
+     JOIN agents a ON f.following_id = a.id
+     WHERE f.follower_id = $1
+     ORDER BY f.created_at DESC`,
+    [req.agent.id]
+  );
+  res.json({ following: result.rows });
+});
+
+// Get my followers list (must come before :name routes)
+app.get('/agents/me/followers', authenticate, async (req, res) => {
+  const result = await pool.query(
+    `SELECT a.name, a.wins, a.karma, a.avatar_url
+     FROM follows f
+     JOIN agents a ON f.follower_id = a.id
+     WHERE f.following_id = $1
+     ORDER BY f.created_at DESC`,
+    [req.agent.id]
+  );
+  res.json({ followers: result.rows });
+});
+
+// Leaderboard (must come before :name routes)
+app.get('/agents/leaderboard', async (req, res) => {
+  const result = await pool.query(
+    `SELECT name, wins, losses, karma, total_earnings, win_streak 
+     FROM agents 
+     ORDER BY wins DESC, karma DESC 
+     LIMIT 50`
+  );
+  res.json({ leaderboard: result.rows });
+});
+
+// Get agent by name (public profile) - parameterized route comes after specific ones
+app.get('/agents/:name', async (req, res) => {
+  const result = await pool.query(
+    `SELECT id, name, display_name, description, personality, avatar_url, 
+            karma, wins, losses, draws, total_earnings, win_streak, 
+            follower_count, following_count, verified, created_at
+     FROM agents WHERE name = $1`,
+    [req.params.name]
+  );
+  
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: 'Agent not found' });
+  }
+  
+  res.json({ agent: result.rows[0] });
 });
 
 // Get agent stats
@@ -99,15 +175,86 @@ app.get('/agents/:name/stats', async (req, res) => {
   res.json({ stats: result.rows[0] });
 });
 
-// Leaderboard
-app.get('/agents/leaderboard', async (req, res) => {
-  const result = await pool.query(
-    `SELECT name, wins, losses, karma, total_earnings, win_streak 
-     FROM agents 
-     ORDER BY wins DESC, karma DESC 
-     LIMIT 50`
-  );
-  res.json({ leaderboard: result.rows });
+// Follow an agent
+app.post('/agents/:name/follow', authenticate, async (req, res) => {
+  try {
+    // Get agent to follow
+    const targetResult = await pool.query(
+      'SELECT id, name, follower_count FROM agents WHERE name = $1',
+      [req.params.name]
+    );
+    
+    if (targetResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    const target = targetResult.rows[0];
+    
+    // Can't follow yourself
+    if (target.id === req.agent.id) {
+      return res.status(400).json({ error: 'Cannot follow yourself' });
+    }
+    
+    // Insert follow relationship
+    await pool.query(
+      `INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [req.agent.id, target.id]
+    );
+    
+    // Update counts
+    await pool.query(
+      'UPDATE agents SET follower_count = follower_count + 1 WHERE id = $1',
+      [target.id]
+    );
+    await pool.query(
+      'UPDATE agents SET following_count = following_count + 1 WHERE id = $1',
+      [req.agent.id]
+    );
+    
+    res.json({ success: true, message: `Now following ${target.name}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Unfollow an agent
+app.delete('/agents/:name/follow', authenticate, async (req, res) => {
+  try {
+    // Get agent to unfollow
+    const targetResult = await pool.query(
+      'SELECT id, name FROM agents WHERE name = $1',
+      [req.params.name]
+    );
+    
+    if (targetResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    const target = targetResult.rows[0];
+    
+    // Delete follow relationship
+    const result = await pool.query(
+      'DELETE FROM follows WHERE follower_id = $1 AND following_id = $2 RETURNING *',
+      [req.agent.id, target.id]
+    );
+    
+    if (result.rows.length > 0) {
+      // Update counts
+      await pool.query(
+        'UPDATE agents SET follower_count = GREATEST(follower_count - 1, 0) WHERE id = $1',
+        [target.id]
+      );
+      await pool.query(
+        'UPDATE agents SET following_count = GREATEST(following_count - 1, 0) WHERE id = $1',
+        [req.agent.id]
+      );
+    }
+    
+    res.json({ success: true, message: `Unfollowed ${target.name}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===========================================

@@ -14,10 +14,10 @@ export function AgentsCarousel() {
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const data = await apiFetch<{ entries: LeaderboardEntry[] }>(
+        const data = await apiFetch<{ leaderboard: LeaderboardEntry[] }>(
           "/agents/leaderboard?limit=20"
         );
-        setAgents(data.entries);
+        setAgents(data.leaderboard || []);
       } catch (err) {
         console.error("Failed to fetch agents:", err);
       } finally {

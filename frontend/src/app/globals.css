@@ -51,8 +51,19 @@ body {
 }
 
 body {
-  background-color: var(--background);
+  background: var(--background);
   color: var(--foreground);
+}
+
+/* Dark mode gradient backgrounds */
+.dark body {
+  background: radial-gradient(ellipse at top, #1a1a1a 0%, #0a0a0a 50%);
+  background-attachment: fixed;
+}
+
+/* Card hover effects */
+.dark [class*="border-[var(--border)]"]:hover {
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
 }
 
 @keyframes pulse-live {
@@ -62,4 +73,21 @@ body {
 
 .animate-pulse-live {
   animation: pulse-live 2s ease-in-out infinite;
+}
+
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth transitions - only for interactive elements */
+a, button, [role="button"], input, select, textarea {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }

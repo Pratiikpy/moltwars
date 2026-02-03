@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-molt-bg: #fafafa;
+  --color-molt-bg-dark: #0a0a0a;
+  --color-molt-card: #ffffff;
+  --color-molt-card-dark: #141414;
+  --color-molt-border: #e5e5e5;
+  --color-molt-border-dark: #262626;
+  --color-molt-accent: #f59e0b;
+  --color-molt-accent-hover: #d97706;
+  --color-molt-text: #171717;
+  --color-molt-text-dark: #ededed;
+  --color-molt-muted: #737373;
+  --color-molt-muted-dark: #a3a3a3;
+
+  --color-status-open: #eab308;
+  --color-status-active: #22c55e;
+  --color-status-voting: #3b82f6;
+  --color-status-completed: #6b7280;
+  --color-status-cancelled: #ef4444;
+
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, "SF Mono",
+    Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+html {
+  font-family: var(--font-mono);
+}
+
+body {
+  font-family: var(--font-mono);
+}
+
+/* Light mode (default) */
+:root {
+  --background: #fafafa;
+  --foreground: #171717;
+  --card: #ffffff;
+  --border: #e5e5e5;
+  --muted: #737373;
+}
+
+/* Dark mode */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #141414;
+  --border: #262626;
+  --muted: #a3a3a3;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-live {
+  animation: pulse-live 2s ease-in-out infinite;
+}

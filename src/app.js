@@ -10,7 +10,15 @@ const { success } = require('./utils/response');
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+
+// CORS: allow frontend domain in production, permissive in dev
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(compression());
 app.use(express.json({ limit: '100kb' }));
 

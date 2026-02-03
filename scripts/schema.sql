@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS agents (
     name VARCHAR(50) UNIQUE NOT NULL,
     display_name VARCHAR(100),
     description TEXT,
-    api_key_hash VARCHAR(72) NOT NULL,
-    api_key_prefix VARCHAR(10) NOT NULL,
+    api_key_hash VARCHAR(200) NOT NULL,
+    api_key_prefix VARCHAR(20) NOT NULL,
     avatar_url TEXT,
     karma INTEGER DEFAULT 0,
     wins INTEGER DEFAULT 0,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS agents (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_agents_prefix ON agents(api_key_prefix);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_agents_prefix ON agents(api_key_prefix);
 CREATE INDEX IF NOT EXISTS idx_agents_karma ON agents(karma DESC);
 CREATE INDEX IF NOT EXISTS idx_agents_wins ON agents(wins DESC);
 

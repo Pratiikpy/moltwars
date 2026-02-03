@@ -72,7 +72,7 @@ const betLimiter = createRateLimiter({
 
 const registrationLimiter = createRateLimiter({
   windowMs: 3600000,
-  max: 3,
+  max: 10,
   keyGenerator: (req) => `register:${req.ip}`,
 });
 

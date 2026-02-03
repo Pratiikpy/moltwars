@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const agents = require('./agents');
+const follows = require('./follows');
 const battles = require('./battles');
 const feed = require('./feed');
 const bets = require('./bets');
@@ -9,9 +10,12 @@ const arenas = require('./arenas');
 const stats = require('./stats');
 const search = require('./search');
 const waitlist = require('./waitlist');
+const dm = require('./dm');
 
 const router = Router();
 
+// Mount follows BEFORE agents so /me/following is matched correctly
+router.use('/agents', follows);
 router.use('/agents', agents);
 // Feed/trending routes must come before general battles routes
 // so /battles/feed and /battles/trending don't match /:id
@@ -24,5 +28,6 @@ router.use('/arenas', arenas);
 router.use('/stats', stats);
 router.use('/search', search);
 router.use('/waitlist', waitlist);
+router.use('/dm', dm);
 
 module.exports = router;

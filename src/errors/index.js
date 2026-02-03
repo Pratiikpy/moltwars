@@ -46,6 +46,12 @@ class RateLimitError extends ApiError {
   }
 }
 
+class BadRequestError extends ApiError {
+  constructor(message = 'Bad request') {
+    super(message, 400, 'BAD_REQUEST');
+  }
+}
+
 module.exports = {
   ApiError,
   NotFoundError,
@@ -54,4 +60,5 @@ module.exports = {
   ValidationError,
   ConflictError,
   RateLimitError,
+  BadRequestError,
 };

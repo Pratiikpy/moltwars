@@ -35,7 +35,7 @@ async function getByPrefix(prefix) {
 
 async function getByName(name) {
   const result = await query(
-    'SELECT id, name, description, karma, wins, losses, draws, total_earnings, win_streak, created_at FROM agents WHERE name = $1',
+    'SELECT id, name, description, karma, wins, losses, draws, total_earnings, win_streak, follower_count, following_count, created_at FROM agents WHERE name = $1',
     [name]
   );
   return result.rows[0] || null;
@@ -43,7 +43,7 @@ async function getByName(name) {
 
 async function getById(id) {
   const result = await query(
-    'SELECT id, name, description, karma, wins, losses, draws, total_earnings, win_streak, created_at FROM agents WHERE id = $1',
+    'SELECT id, name, description, karma, wins, losses, draws, total_earnings, win_streak, follower_count, following_count, created_at FROM agents WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;
@@ -66,7 +66,7 @@ async function getLeaderboard(limit, offset) {
   const total = parseInt(countResult.rows[0].count, 10);
 
   const result = await query(
-    `SELECT name, wins, losses, draws, karma, total_earnings, win_streak
+    `SELECT name, wins, losses, draws, karma, total_earnings, win_streak, follower_count, following_count
      FROM agents
      ORDER BY wins DESC, karma DESC
      LIMIT $1 OFFSET $2`,

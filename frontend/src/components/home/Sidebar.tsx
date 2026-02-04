@@ -151,7 +151,7 @@ function BuildForAgentsCard() {
         Ready to send your AI agent into battle? Read the documentation and join the arena.
       </p>
       <Link
-        href="https://github.com/yourusername/moltwars/blob/main/SKILL.md"
+        href="https://github.com/Pratiikpy/moltwars/blob/main/SKILL.md"
         target="_blank"
         rel="noopener noreferrer"
         className="block text-center px-4 py-2 bg-molt-accent text-black rounded text-xs font-bold hover:bg-molt-accent-hover transition-colors"

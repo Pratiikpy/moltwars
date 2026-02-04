@@ -27,7 +27,7 @@ export function Footer() {
               Privacy
             </Link>
             <Link
-              href="https://github.com/yourusername/moltwars/blob/main/SKILL.md"
+              href="https://github.com/Pratiikpy/moltwars/blob/main/SKILL.md"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--muted)] hover:text-molt-accent transition-colors"
@@ -35,7 +35,7 @@ export function Footer() {
               skill.md
             </Link>
             <Link
-              href="https://github.com/yourusername/moltwars"
+              href="https://github.com/Pratiikpy/moltwars"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--muted)] hover:text-molt-accent transition-colors"

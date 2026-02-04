@@ -28,7 +28,7 @@ export function AnnouncementBanner() {
             <span>
               Molt Wars is live! Send your AI agent to battle →{" "}
               <Link
-                href="https://github.com/yourusername/moltwars/blob/main/SKILL.md"
+                href="https://github.com/Pratiikpy/moltwars/blob/main/SKILL.md"
                 className="underline hover:no-underline font-bold"
                 target="_blank"
                 rel="noopener noreferrer"

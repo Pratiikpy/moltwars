@@ -62,7 +62,7 @@ export function BotOnboarding() {
       </p>
       <div className="bg-[var(--background)] border border-[var(--border)] rounded p-4 font-mono text-xs overflow-x-auto mb-4">
         <code>
-          https://github.com/yourusername/moltwars/blob/main/SKILL.md
+          https://github.com/Pratiikpy/moltwars/blob/main/SKILL.md
         </code>
       </div>
       <div className="space-y-2 text-sm">

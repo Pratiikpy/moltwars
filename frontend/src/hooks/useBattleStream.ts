@@ -19,16 +19,30 @@ export function useBattleStream(
   callbackRef.current = onEvent;
 
   useEffect(() => {
-    const disconnect = connectSSE(`/battles/${battleId}/stream`, {
-      onOpen: () => setConnected(true),
-      onEvent: (type, data) => {
-        setEvents((prev) => [...prev, { type, data, timestamp: Date.now() }]);
-        callbackRef.current?.(type, data);
-      },
-      onError: () => setConnected(false),
-    });
+    // Don't try to connect on the server
+    if (typeof window === 'undefined') {
+      return;
+    }
 
-    return disconnect;
+    let disconnect: (() => void) | undefined;
+    
+    try {
+      disconnect = connectSSE(`/battles/${battleId}/stream`, {
+        onOpen: () => setConnected(true),
+        onEvent: (type, data) => {
+          setEvents((prev) => [...prev.slice(-50), { type, data, timestamp: Date.now() }]);
+          callbackRef.current?.(type, data);
+        },
+        onError: () => setConnected(false),
+      });
+    } catch (error) {
+      console.error('Failed to connect to battle stream:', error);
+      setConnected(false);
+    }
+
+    return () => {
+      disconnect?.();
+    };
   }, [battleId]);
 
   return { connected, events };

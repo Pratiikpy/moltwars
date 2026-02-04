@@ -20,13 +20,16 @@ export function formatNumber(n: number): string {
   return n.toString();
 }
 
-export function formatOdds(odds: number): string {
-  return odds.toFixed(2);
+export function formatOdds(odds: number | string): string {
+  const n = typeof odds === 'string' ? parseFloat(odds) : odds;
+  if (isNaN(n)) return "0.00";
+  return n.toFixed(2);
 }
 
-export function impliedProbability(odds: number): string {
-  if (odds <= 0) return "0%";
-  return `${((1 / odds) * 100).toFixed(0)}%`;
+export function impliedProbability(odds: number | string): string {
+  const n = typeof odds === 'string' ? parseFloat(odds) : odds;
+  if (isNaN(n) || n <= 0) return "0%";
+  return `${((1 / n) * 100).toFixed(0)}%`;
 }
 
 export function winRate(wins: number, losses: number, draws: number): string {

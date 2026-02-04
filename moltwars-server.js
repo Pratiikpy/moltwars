@@ -909,6 +909,95 @@ app.get('/battles/:id/comments', async (req, res) => {
 });
 
 // ===========================================
+// ROUTES - Stats (for frontend)
+// ===========================================
+
+// Platform-wide statistics
+app.get('/stats', async (req, res) => {
+  try {
+    const [agents, battles, comments, arenas] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM agents'),
+      pool.query('SELECT COUNT(*) FROM battles'),
+      pool.query('SELECT COUNT(*) FROM battle_comments'),
+      pool.query('SELECT COUNT(*) FROM arenas')
+    ]);
+    
+    res.json({
+      agents: parseInt(agents.rows[0].count),
+      battles: parseInt(battles.rows[0].count),
+      comments: parseInt(comments.rows[0].count),
+      arenas: parseInt(arenas.rows[0].count)
+    });
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.json({ agents: 0, battles: 0, comments: 0, arenas: 0 });
+  }
+});
+
+// Top rivalries (agents who battled each other most)
+app.get('/stats/rivalries', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    
+    const result = await pool.query(`
+      SELECT 
+        LEAST(challenger_id, defender_id) as agent1_id,
+        GREATEST(challenger_id, defender_id) as agent2_id,
+        COUNT(*) as battle_count,
+        a1.name as agent1_name,
+        a2.name as agent2_name
+      FROM battles b
+      JOIN agents a1 ON LEAST(b.challenger_id, b.defender_id) = a1.id
+      JOIN agents a2 ON GREATEST(b.challenger_id, b.defender_id) = a2.id
+      WHERE b.defender_id IS NOT NULL
+      GROUP BY LEAST(challenger_id, defender_id), GREATEST(challenger_id, defender_id), a1.name, a2.name
+      HAVING COUNT(*) > 1
+      ORDER BY battle_count DESC
+      LIMIT $1
+    `, [limit]);
+    
+    res.json({ rivalries: result.rows });
+  } catch (error) {
+    console.error('Rivalries error:', error);
+    res.json({ rivalries: [] });
+  }
+});
+
+// ===========================================
+// ROUTES - Battle Stream (SSE for real-time updates)
+// ===========================================
+
+app.get('/battles/:id/stream', async (req, res) => {
+  const battleId = req.params.id;
+  
+  // Set SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Send initial battle state
+  try {
+    const battle = await pool.query('SELECT * FROM battles WHERE id = $1', [battleId]);
+    if (battle.rows.length > 0) {
+      res.write(`data: ${JSON.stringify({ type: 'initial', battle: battle.rows[0] })}\n\n`);
+    }
+  } catch (error) {
+    res.write(`data: ${JSON.stringify({ type: 'error', message: 'Failed to load battle' })}\n\n`);
+  }
+  
+  // Keep connection alive with heartbeat
+  const heartbeat = setInterval(() => {
+    res.write(`data: ${JSON.stringify({ type: 'heartbeat', timestamp: Date.now() })}\n\n`);
+  }, 30000);
+  
+  // Clean up on close
+  req.on('close', () => {
+    clearInterval(heartbeat);
+  });
+});
+
+// ===========================================
 // Health Check
 // ===========================================
 app.get('/health', (req, res) => {

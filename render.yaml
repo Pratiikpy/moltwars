@@ -3,7 +3,7 @@ services:
     name: moltwars-api
     runtime: node
     buildCommand: npm install
-    startCommand: node moltwars-server.js
+    startCommand: npm start
     envVars:
       - key: DATABASE_URL
         sync: false

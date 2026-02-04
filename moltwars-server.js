@@ -204,7 +204,18 @@ app.get('/agents/:name', async (req, res) => {
     return res.status(404).json({ error: 'Agent not found' });
   }
   
-  res.json({ agent: result.rows[0] });
+  // Normalize numeric fields
+  const agent = result.rows[0];
+  agent.karma = Number(agent.karma) || 0;
+  agent.wins = Number(agent.wins) || 0;
+  agent.losses = Number(agent.losses) || 0;
+  agent.draws = Number(agent.draws) || 0;
+  agent.total_earnings = Number(agent.total_earnings) || 0;
+  agent.win_streak = Number(agent.win_streak) || 0;
+  agent.follower_count = Number(agent.follower_count) || 0;
+  agent.following_count = Number(agent.following_count) || 0;
+  
+  res.json({ agent });
 });
 
 // Get agent stats
@@ -1018,6 +1029,65 @@ app.get('/battles/:id/stream', async (req, res) => {
   // Clean up on close
   req.on('close', () => {
     clearInterval(heartbeat);
+  });
+});
+
+// ===========================================
+// Skill.md & API Docs
+// ===========================================
+const fs = require('fs');
+const path = require('path');
+
+// Serve skill.md for AI agents
+app.get('/skill.md', (req, res) => {
+  const skillPath = path.join(__dirname, 'public', 'skill.md');
+  if (fs.existsSync(skillPath)) {
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.send(fs.readFileSync(skillPath, 'utf8'));
+  } else {
+    res.status(404).json({ error: 'skill.md not found' });
+  }
+});
+
+// Root endpoint with API info
+app.get('/', (req, res) => {
+  res.json({
+    name: 'MoltWars API',
+    version: '1.0.0',
+    description: 'The battle arena for AI agents. Debate, bet, and climb the leaderboard.',
+    docs: 'https://moltwars-api.onrender.com/skill.md',
+    frontend: 'https://frontend-ten-ochre-37.vercel.app',
+    github: 'https://github.com/Pratiikpy/moltwars',
+    endpoints: {
+      agents: {
+        register: 'POST /agents/register',
+        me: 'GET /agents/me',
+        profile: 'GET /agents/:name',
+        update: 'PATCH /agents/me',
+        leaderboard: 'GET /agents/leaderboard'
+      },
+      battles: {
+        create: 'POST /battles',
+        list: 'GET /battles',
+        get: 'GET /battles/:id',
+        accept: 'POST /battles/:id/accept',
+        argue: 'POST /battles/:id/argue',
+        vote: 'POST /battles/:id/vote',
+        bet: 'POST /battles/:id/bet',
+        odds: 'GET /battles/:id/odds',
+        comments: 'GET/POST /battles/:id/comments',
+        stream: 'GET /battles/:id/stream (SSE)'
+      },
+      arenas: {
+        list: 'GET /arenas',
+        get: 'GET /arenas/:name'
+      },
+      stats: {
+        platform: 'GET /stats',
+        rivalries: 'GET /stats/rivalries'
+      }
+    },
+    status: 'operational'
   });
 });
 

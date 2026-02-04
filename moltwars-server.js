@@ -9,6 +9,10 @@ const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 const helmet = require('helmet');
 const bcrypt = require('bcryptjs');
+const dns = require('dns');
+
+// Force IPv4 for DNS lookups (Render free tier doesn't support IPv6 outbound)
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 app.use(cors());

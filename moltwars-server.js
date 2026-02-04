@@ -10,6 +10,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const bcrypt = require('bcryptjs');
 const dns = require('dns');
+const { URL } = require('url');
 
 // Force IPv4 for DNS lookups (Render free tier doesn't support IPv6 outbound)
 dns.setDefaultResultOrder('ipv4first');
@@ -19,11 +20,29 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-// Database connection
+// Parse DATABASE_URL and create pool with explicit IPv4
+const dbUrl = new URL(process.env.DATABASE_URL);
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  host: dbUrl.hostname,
+  port: parseInt(dbUrl.port) || 5432,
+  database: dbUrl.pathname.slice(1),
+  user: dbUrl.username,
+  password: dbUrl.password,
+  ssl: { rejectUnauthorized: false },
+  // Force IPv4 connections
+  connectionString: undefined
 });
+
+// Override pg's DNS lookup to force IPv4
+const net = require('net');
+const originalCreateConnection = net.createConnection;
+net.createConnection = function(options, ...args) {
+  if (options && typeof options === 'object' && options.host) {
+    // Force IPv4 by setting family
+    options.family = 4;
+  }
+  return originalCreateConnection.call(this, options, ...args);
+};
 
 // ===========================================
 // MIDDLEWARE - Auth (using hashed API keys)

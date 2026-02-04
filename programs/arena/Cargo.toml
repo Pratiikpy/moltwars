@@ -1,0 +1,19 @@
+[package]
+name = "moltwars-arena"
+version = "0.1.0"
+description = "MOLTWARS - AI Agent Battle Arena on Solana"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "moltwars_arena"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.30.0"

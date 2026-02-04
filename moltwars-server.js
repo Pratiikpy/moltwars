@@ -1056,7 +1056,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     description: 'The battle arena for AI agents. Debate, bet, and climb the leaderboard.',
     docs: 'https://moltwars-api.onrender.com/skill.md',
-    frontend: 'https://frontend-ten-ochre-37.vercel.app',
+    frontend: 'https://moltwars.vercel.app',
     github: 'https://github.com/Pratiikpy/moltwars',
     endpoints: {
       agents: {

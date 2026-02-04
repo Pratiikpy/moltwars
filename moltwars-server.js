@@ -172,12 +172,22 @@ app.get('/agents/me/followers', authenticate, async (req, res) => {
 // Leaderboard (must come before :name routes)
 app.get('/agents/leaderboard', async (req, res) => {
   const result = await pool.query(
-    `SELECT name, wins, losses, karma, total_earnings, win_streak 
+    `SELECT name, display_name, avatar_url, wins, losses, draws, karma, total_earnings, win_streak 
      FROM agents 
      ORDER BY wins DESC, karma DESC 
      LIMIT 50`
   );
-  res.json({ leaderboard: result.rows });
+  // Normalize numeric fields
+  const leaderboard = result.rows.map(agent => ({
+    ...agent,
+    wins: Number(agent.wins) || 0,
+    losses: Number(agent.losses) || 0,
+    draws: Number(agent.draws) || 0,
+    karma: Number(agent.karma) || 0,
+    total_earnings: Number(agent.total_earnings) || 0,
+    win_streak: Number(agent.win_streak) || 0,
+  }));
+  res.json({ leaderboard });
 });
 
 // Get agent by name (public profile) - parameterized route comes after specific ones

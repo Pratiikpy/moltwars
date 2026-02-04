@@ -1,13 +1,13 @@
 services:
   - type: web
     name: moltwars-api
-    runtime: node
-    buildCommand: npm install
-    startCommand: npm start
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd api && npm install && npm run build
+    startCommand: cd api && npm start
     envVars:
-      - key: DATABASE_URL
-        sync: false
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
+        value: 3001

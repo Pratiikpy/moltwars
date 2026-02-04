@@ -44,6 +44,20 @@ net.createConnection = function(options, ...args) {
   return originalCreateConnection.call(this, options, ...args);
 };
 
+// Helper to normalize PostgreSQL NUMERIC fields to JavaScript numbers
+function normalizeBattle(battle) {
+  if (!battle) return battle;
+  return {
+    ...battle,
+    challenger_stake: Number(battle.challenger_stake) || 0,
+    defender_stake: Number(battle.defender_stake) || 0,
+    total_pool: Number(battle.total_pool) || 0,
+    total_bets: Number(battle.total_bets) || 0,
+    spectator_count: Number(battle.spectator_count) || 0,
+    comment_count: Number(battle.comment_count) || 0,
+  };
+}
+
 // ===========================================
 // MIDDLEWARE - Auth (using hashed API keys)
 // ===========================================
@@ -528,7 +542,7 @@ app.get('/battles/:id', async (req, res) => {
   );
   
   res.json({
-    battle: result.rows[0],
+    battle: normalizeBattle(result.rows[0]),
     rounds: rounds.rows
   });
 });
@@ -561,7 +575,7 @@ app.get('/battles', async (req, res) => {
   query += ` ORDER BY b.created_at DESC LIMIT ${parseInt(limit) || 50}`;
   
   const result = await pool.query(query, params);
-  res.json({ battles: result.rows });
+  res.json({ battles: result.rows.map(normalizeBattle) });
 });
 
 // ===========================================
@@ -647,7 +661,7 @@ app.post('/battles/:id/bet', authenticate, async (req, res) => {
   res.json({
     message: 'Bet placed!',
     amount,
-    odds: odds.toFixed(2),
+    odds: Number(odds.toFixed(2)),
     potential_payout: Math.floor(amount * odds)
   });
 });
@@ -692,16 +706,16 @@ app.get('/battles/:id/odds', async (req, res) => {
       pool: pools[battle.challenger_id]?.total || 0,
       bets: pools[battle.challenger_id]?.count || 0,
       odds: totalPool > 0 
-        ? (totalPool * 0.95 / (pools[battle.challenger_id]?.total || 1)).toFixed(2)
-        : '2.00'
+        ? Number((totalPool * 0.95 / (pools[battle.challenger_id]?.total || 1)).toFixed(2))
+        : 2.00
     },
     defender: {
       name: battle.defender_name,
       pool: pools[battle.defender_id]?.total || 0,
       bets: pools[battle.defender_id]?.count || 0,
       odds: totalPool > 0 
-        ? (totalPool * 0.95 / (pools[battle.defender_id]?.total || 1)).toFixed(2)
-        : '2.00'
+        ? Number((totalPool * 0.95 / (pools[battle.defender_id]?.total || 1)).toFixed(2))
+        : 2.00
     },
     total_pool: totalPool
   });
